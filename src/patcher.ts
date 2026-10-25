@@ -41,13 +41,20 @@ export class Patcher {
             const thisIsSearchView = this.hasOwnProperty("searchQuery");
             const hasBacklinks = child?.backlinkDom;
 
+            // Newer Obsidian versions add several children to the search view,
+            // and not all of them carry a search result dom. Only patch when we
+            // actually have something to patch, and keep retrying on the next
+            // children instead of giving up after the first attempt.
+            const searchResultDom = child?.dom || child?.backlinkDom;
+
             if (
               (thisIsSearchView || hasBacklinks) &&
+              searchResultDom &&
               !patcher.triedPatchingSearchResultItem
             ) {
-              patcher.triedPatchingSearchResultItem = true;
               try {
-                patcher.patchSearchResultDom(child.dom || child.backlinkDom);
+                patcher.patchSearchResultDom(searchResultDom);
+                patcher.triedPatchingSearchResultItem = true;
               } catch (error) {
                 patcher.reportError(
                   error,
@@ -65,18 +72,27 @@ export class Patcher {
 
   patchSearchResultDom(searchResultDom: any) {
     const patcher = this;
+    const prototype = searchResultDom?.constructor?.prototype;
+
+    if (!prototype) {
+      return;
+    }
+
     this.plugin.register(
-      around(searchResultDom.constructor.prototype, {
+      around(prototype, {
         addResult(old: any) {
           return function (...args: any[]) {
             patcher.disposerRegistry.onAddResult(this);
 
             const result = old.call(this, ...args);
 
-            if (!patcher.triedPatchingRenderContentMatches) {
-              patcher.triedPatchingRenderContentMatches = true;
+            if (
+              !patcher.triedPatchingRenderContentMatches &&
+              result?.constructor?.prototype
+            ) {
               try {
                 patcher.patchSearchResultItem(result);
+                patcher.triedPatchingRenderContentMatches = true;
               } catch (error) {
                 patcher.reportError(
                   error,
@@ -101,8 +117,14 @@ export class Patcher {
 
   patchSearchResultItem(searchResultItem: any) {
     const patcher = this;
+    const prototype = searchResultItem?.constructor?.prototype;
+
+    if (!prototype) {
+      return;
+    }
+
     this.plugin.register(
-      around(searchResultItem.constructor.prototype, {
+      around(prototype, {
         renderContentMatches(old: any) {
           return function (...args: any[]) {
             const result = old.call(this, ...args);
@@ -110,7 +132,7 @@ export class Patcher {
             // todo: clean this up
             if (
               patcher.wrappedSearchResultItems.has(this) ||
-              !this.vChildren._children ||
+              !this.vChildren?._children ||
               this.vChildren._children.length === 0
             ) {
               return result;
