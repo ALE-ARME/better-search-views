@@ -3,9 +3,8 @@
 	"name": "Better Search Views",
 	"version": "0.3.1",
 	"minAppVersion": "0.16.0",
-	"description": "Outliner-like breadcrumb trees for search, backlinks and embedded queries ",
-	"author": "ivan-lednev",
-	"authorUrl": "https://github.com/ivan-lednev",
-	"fundingUrl": "https://www.buymeacoffee.com/machineelf",
+	"description": "Outliner-like breadcrumb trees for search, backlinks and embedded queries. Fork of ivan-lednev/better-search-views with fixes for recent Obsidian versions.",
+	"author": "ARME",
+	"authorUrl": "https://github.com/ALE-ARME",
 	"isDesktopOnly": false
 }
